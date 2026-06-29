@@ -20,7 +20,7 @@ const i18n = {
   example_label: { en: "Example", zh: "示例" },
   related_label: { en: "Related", zh: "相关" },
 
-  home_title: { en: 'A <span>NumPy-style</span> numerical library<br>for the Java Virtual Machine', zh: '<span>NumPy 风格</span>的 libnpc 数值计算库<br>Java 封装 API' },
+  home_title: { en: 'A <span class="grad">NumPy-style</span> numerical library<br>for the Java Virtual Machine', zh: '<span class="grad">NumPy 风格</span>的 libnpc 数值计算库<br>Java 封装 API' },
   home_lead: { en: 'libnpc-java provides ~300+ JNI-wrapped functions across 20+ modules. AutoCloseable arrays with try-with-resources. MIT licensed.', zh: 'libnpc-java 通过 JNI 封装了 20+ 个模块共 300+ 个函数。AutoCloseable 数组支持 try-with-resources。MIT 许可证。' },
   home_badge_java: { en: "Java 11+", zh: "Java 11+" },
   home_badge_jni: { en: "JNI + CMake", zh: "JNI + CMake" },
