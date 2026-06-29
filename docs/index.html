@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>libnpc Java — Numerical Computing for the JVM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #faf9f7; --surface: #ffffff; --fg: #1a1a2e; --fg2: #5a5a7a;
+    --border: #e8e6e1; --accent: #e8782a; --accent2: #d0601a;
+    --code-bg: #1e1e2e; --code-fg: #cdd6f4;
+    --hover: #fff5ee; --tag: #fff0e6; --sidebar: #ffffff;
+    --teal: #1a8a7d; --blue: #2563a0; --purple: #7c3aed;
+    --warn: #fffbeb; --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow: 0 4px 16px rgba(0,0,0,0.06); --shadow-lg: 0 12px 40px rgba(0,0,0,0.08);
+    --radius: 12px; --radius-sm: 8px;
+}
+@media (prefers-color-scheme: dark) {
+:root {
+    --bg: #0d1117; --surface: #161b22; --fg: #e6edf3; --fg2: #8b949e;
+    --border: #30363d; --accent: #f0883e; --accent2: #e8782a;
+    --code-bg: #0d1117; --code-fg: #e6edf3;
+    --hover: #1c2129; --tag: #1f2630; --sidebar: #0d1117;
+    --warn: #1a1308; --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+    --shadow: 0 4px 16px rgba(0,0,0,0.3); --shadow-lg: 0 12px 40px rgba(0,0,0,0.4);
+}
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.65;
+    font-size: 15px;
+}
+a { color: var(--accent); text-decoration: none; transition: color 0.15s; }
+a:hover { color: var(--accent2); }
+
+/* ── Sidebar ──────────────────────────────────────────── */
+#sidebar {
+    position: fixed; top:0; left:0; width: 270px; height: 100vh;
+    background: var(--sidebar); border-right: 1px solid var(--border);
+    z-index: 100; display: flex; flex-direction: column;
+    box-shadow: var(--shadow-sm);
+}
+.sidebar-header {
+    padding: 28px 24px 20px; border-bottom: 1px solid var(--border); flex-shrink:0;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+    color: #fff;
+}
+.sidebar-header .logo { font-size: 26px; font-weight: 800; letter-spacing: -0.8px; }
+.sidebar-header .logo span { color: var(--accent); }
+.sidebar-header .ver { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 4px; }
+#lang-toggle { display: flex; margin-top: 14px; gap: 6px; }
+#lang-toggle button {
+    flex:1; padding: 5px 0; border: 1px solid rgba(255,255,255,0.2);
+    background: transparent; color: rgba(255,255,255,0.7);
+    cursor: pointer; font-size: 12px; font-weight: 600; border-radius: 6px;
+    transition: all 0.15s; font-family: 'Inter', sans-serif;
+}
+#lang-toggle button:hover { background: rgba(255,255,255,0.08); }
+#lang-toggle button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+#search-wrap { padding: 14px 18px; border-bottom: 1px solid var(--border); flex-shrink:0; position:relative; }
+#search-box {
+    width: 100%; padding: 9px 14px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 13px; background: var(--bg); color: var(--fg);
+    outline: none; font-family: 'Inter', sans-serif;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+#search-box:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,120,42,0.1); }
+#search-results {
+    position: absolute; top: calc(100% - 2px); left: 14px; right: 14px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg); max-height: 280px; overflow-y: auto; z-index: 50; display: none;
+}
+.search-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 13px; }
+.search-item:last-child { border-bottom: none; }
+.search-item:hover { background: var(--hover); }
+.search-item .sn { font-weight: 600; color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.search-item .sm { font-size: 11px; color: var(--fg2); margin-top: 2px; }
+
+.sidebar-nav { flex:1; overflow-y: auto; padding: 10px 0; }
+.sidebar-nav details { margin: 0; }
+.sidebar-nav details summary {
+    padding: 8px 24px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.2px; color: var(--fg2); cursor: pointer; user-select: none;
+    transition: color 0.15s;
+}
+.sidebar-nav details summary:hover { color: var(--accent); }
+.sidebar-nav details a {
+    display: block; padding: 7px 24px 7px 36px; font-size: 13px; font-weight: 500;
+    color: var(--fg2); border-left: 2px solid transparent; transition: all 0.12s;
+    border-radius: 0 6px 6px 0; margin: 1px 12px 1px 0;
+}
+.sidebar-nav details a:hover, .sidebar-nav details a.here {
+    background: var(--hover); border-left-color: var(--accent);
+    color: var(--accent); text-decoration: none;
+}
+
+/* ── Main ─────────────────────────────────────────────── */
+#main { margin-left: 270px; min-height: 100vh; }
+.page { display: none; padding: 56px 64px; max-width: 900px; animation: fadeIn 0.2s ease; }
+.page.on { display: block; }
+.hero { display: none; padding: 72px 64px 56px; max-width: 900px; animation: fadeIn 0.2s ease; }
+.hero.on { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.hero h1 {
+    font-size: 42px; font-weight: 800; letter-spacing: -1.2px; line-height: 1.15;
+    margin-bottom: 16px;
+}
+.hero h1 .grad {
+    background: linear-gradient(135deg, var(--accent) 0%, #d97706 50%, #dc2626 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero p.lead { font-size: 18px; color: var(--fg2); max-width: 580px; margin-bottom: 28px; line-height: 1.5; }
+.hero .badges { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 36px; }
+.hero .badges span {
+    padding: 5px 14px; border-radius: 100px; font-size: 12px; font-weight: 600;
+    background: var(--tag); color: var(--accent); letter-spacing: 0.2px;
+}
+.hero .cta { margin-bottom: 48px; display: flex; gap: 12px; }
+.hero .cta a {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 12px 28px; border-radius: 100px; font-weight: 600; font-size: 15px;
+    transition: all 0.2s; background: var(--accent); color: #fff;
+    box-shadow: 0 4px 14px rgba(232,120,42,0.3);
+}
+.hero .cta a:hover { background: var(--accent2); box-shadow: 0 6px 20px rgba(232,120,42,0.4); transform: translateY(-1px); }
+.hero .cta a.gh {
+    background: var(--surface); color: var(--fg); border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+}
+.hero .cta a.gh:hover { background: var(--hover); box-shadow: var(--shadow); transform: translateY(-1px); }
+
+/* ── Feature cards ─────────────────────────────────────── */
+.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 48px 0; }
+.feat-card {
+    padding: 24px; border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); box-shadow: var(--shadow-sm); transition: all 0.2s;
+    position: relative; overflow: hidden;
+}
+.feat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), #d97706);
+    opacity: 0; transition: opacity 0.2s;
+}
+.feat-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+.feat-card:hover::before { opacity: 1; }
+.feat-card .fc-icon { font-size: 24px; margin-bottom: 10px; }
+.feat-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--fg); }
+.feat-card p { font-size: 13px; color: var(--fg2); line-height: 1.55; }
+
+/* ── Module grid ───────────────────────────────────────── */
+.mod-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 28px 0; }
+.mod-card {
+    padding: 18px 20px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; transition: all 0.2s; background: var(--surface);
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: var(--shadow-sm);
+}
+.mod-card:hover { border-color: var(--accent); background: var(--hover); box-shadow: var(--shadow); transform: translateX(3px); }
+.mod-card h3 { font-size: 14px; font-weight: 600; color: var(--fg); }
+.mod-card .n {
+    display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 100px;
+    font-size: 11px; font-weight: 600; background: var(--tag); color: var(--accent);
+}
+
+/* ── Page titles ───────────────────────────────────────── */
+.page h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.7px; margin-bottom: 6px; }
+.page h1 .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600;
+    background: var(--tag); color: var(--accent); margin-left: 10px; vertical-align: middle;
+}
+.page h2 {
+    font-size: 20px; font-weight: 700; margin: 40px 0 14px; padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent); display: inline-block;
+}
+.page h3 { font-size: 16px; font-weight: 600; margin: 22px 0 10px; }
+.page p { margin: 10px 0; color: var(--fg2); }
+
+/* ── Function table ────────────────────────────────────── */
+.fn-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.fn-table th {
+    text-align: left; padding: 10px 14px; background: var(--surface);
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--fg2); border-bottom: 2px solid var(--border);
+    position: sticky; top:0;
+}
+.fn-table td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border); }
+.fn-table tbody tr { transition: background 0.1s; }
+.fn-table tbody tr:hover td { background: var(--hover); }
+.fn-table .fn-name {
+    font-weight: 600; font-family: 'JetBrains Mono', monospace;
+    color: var(--accent); white-space: nowrap; cursor: pointer; font-size: 12px;
+}
+.fn-table .fn-sig { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--fg); }
+.fn-table .fn-desc { font-size: 12px; color: var(--fg2); max-width: 280px; }
+
+/* ── Code ──────────────────────────────────────────────── */
+code, pre, .sig {
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+}
+code {
+    font-size: 13px; background: var(--tag); padding: 2px 6px; border-radius: 4px;
+    color: var(--accent); font-weight: 500;
+}
+pre {
+    background: var(--code-bg); color: var(--code-fg); padding: 20px 24px;
+    border-radius: var(--radius); overflow-x: auto; margin: 14px 0;
+    line-height: 1.6; font-size: 13px;
+}
+pre code { background: none; padding: 0; color: inherit; font-weight: 400; }
+.sig {
+    background: var(--code-bg); color: var(--code-fg); padding: 18px 24px;
+    border-radius: var(--radius); margin: 16px 0; font-size: 13px;
+    line-height: 1.7; overflow-x: auto;
+}
+.sig .kw { color: #cba6f7; font-weight: 600; }
+.sig .ty { color: #89b4fa; }
+.sig .fn { color: #a6e3a1; }
+
+/* ── Tables ────────────────────────────────────────────── */
+.param-tbl { width: 100%; border-collapse: separate; border-spacing: 0; margin: 16px 0; }
+.param-tbl th {
+    text-align: left; padding: 8px 14px; background: var(--surface);
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--fg2); border-bottom: 2px solid var(--border);
+}
+.param-tbl td { padding: 8px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.param-tbl .pn { color: var(--accent); font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 12px; }
+.param-tbl .pt { color: var(--blue); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+/* ── Note ──────────────────────────────────────────────── */
+.note {
+    background: var(--warn); border-left: 3px solid #f59e0b; padding: 14px 18px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 16px 0; font-size: 13px;
+    color: #92400e; line-height: 1.55;
+}
+
+/* ── Quick-start code blocks ───────────────────────────── */
+.qs {
+    background: var(--code-bg); border-radius: var(--radius); overflow: hidden;
+    margin: 16px 0; box-shadow: var(--shadow);
+}
+.qs-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.qs-header span { font-size: 12px; color: #8b949e; font-weight: 600; }
+.qs-header button {
+    padding: 4px 12px; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px;
+    background: transparent; color: #8b949e; font-size: 11px; cursor: pointer;
+    font-family: 'Inter', sans-serif; transition: all 0.15s;
+}
+.qs-header button:hover { background: rgba(255,255,255,0.06); color: #e6edf3; }
+.qs pre { margin: 0; border-radius: 0; background: transparent; box-shadow: none; }
+
+/* ── Back link ─────────────────────────────────────────── */
+.back {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 14px; border-radius: 100px; font-size: 13px; font-weight: 500;
+    color: var(--fg2); margin-bottom: 20px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface);
+    transition: all 0.15s;
+}
+.back:hover { background: var(--hover); color: var(--accent); border-color: var(--accent); text-decoration: none; }
+
+.hidden { display: none; }
+
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 1024px) { .features { grid-template-columns: 1fr 1fr; } .mod-grid { grid-template-columns: 1fr; } }
+@media (max-width: 768px) {
+    #sidebar { position: relative; width: 100%; height: auto; max-height: 45vh; }
+    #main { margin-left: 0; }
+    .hero, .page { padding: 32px 20px; }
+    .hero h1 { font-size: 28px; }
+    .features { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<aside id="sidebar">
+<div class="sidebar-header">
+    <div class="logo">libnpc <span>Java</span></div>
+    <div class="ver">v1.0.0 · 20 modules · 330+ functions</div>
+    <div id="lang-toggle">
+        <button class="on" onclick="setLang('en')">EN</button>
+        <button onclick="setLang('zh')">中 文</button>
+    </div>
+</div>
+<div id="search-wrap">
+    <input type="text" id="search-box" placeholder="Search functions..." oninput="doSearch(this.value)" autocomplete="off">
+    <div id="search-results"></div>
+</div>
+<nav class="sidebar-nav">
+    <details open><summary data-i18n="overview">Overview</summary>
+        <a href="#page:home" onclick="navigate('#page:home');return false" class="here" data-i18n="home">Home</a>
+        <a href="#page:install" onclick="navigate('#page:install');return false" data-i18n="install">Installation</a>
+        <a href="#page:quickstart" onclick="navigate('#page:quickstart');return false" data-i18n="quick">Quick Start</a>
+        <a href="#page:dtype" onclick="navigate('#page:dtype');return false" data-i18n="dtype">Data Types</a>
+        <a href="#page:array" onclick="navigate('#page:array');return false" data-i18n="page_array">NpcArray Class</a>
+    </details>
+    <details open><summary data-i18n="modules">API Reference</summary>
+        <a href="#mod:creation" onclick="navigate('#mod:creation');return false" data-i18n="mod_creation">Array Creation</a>
+        <a href="#mod:arithmetic" onclick="navigate('#mod:arithmetic');return false" data-i18n="mod_arithmetic">Arithmetic</a>
+        <a href="#mod:math" onclick="navigate('#mod:math');return false" data-i18n="mod_math">Math Functions</a>
+        <a href="#mod:comparison" onclick="navigate('#mod:comparison');return false" data-i18n="mod_comparison">Comparison &amp; Logic</a>
+        <a href="#mod:stats" onclick="navigate('#mod:stats');return false" data-i18n="mod_stats">Statistics</a>
+        <a href="#mod:nanstats" onclick="navigate('#mod:nanstats');return false" data-i18n="mod_nanstats">NaN Statistics</a>
+        <a href="#mod:linalg" onclick="navigate('#mod:linalg');return false" data-i18n="mod_linalg">Linear Algebra</a>
+        <a href="#mod:fft" onclick="navigate('#mod:fft');return false" data-i18n="mod_fft">FFT</a>
+        <a href="#mod:random" onclick="navigate('#mod:random');return false" data-i18n="mod_random">Random</a>
+        <a href="#mod:polynomial" onclick="navigate('#mod:polynomial');return false" data-i18n="mod_polynomial">Polynomials</a>
+        <a href="#mod:shape" onclick="navigate('#mod:shape');return false" data-i18n="mod_shape">Shape &amp; Manipulation</a>
+        <a href="#mod:search" onclick="navigate('#mod:search');return false" data-i18n="mod_search">Search &amp; Set</a>
+        <a href="#mod:interp" onclick="navigate('#mod:interp');return false" data-i18n="mod_interp">Interpolation</a>
+        <a href="#mod:sorting" onclick="navigate('#mod:sorting');return false" data-i18n="mod_sorting">Sorting</a>
+        <a href="#mod:io" onclick="navigate('#mod:io');return false" data-i18n="mod_io">I/O</a>
+        <a href="#mod:window" onclick="navigate('#mod:window');return false" data-i18n="mod_window">Window Functions</a>
+        <a href="#mod:histogram" onclick="navigate('#mod:histogram');return false" data-i18n="mod_histogram">Histograms</a>
+        <a href="#mod:mutation" onclick="navigate('#mod:mutation');return false" data-i18n="mod_mutation">In-place Mutation</a>
+        <a href="#mod:misc" onclick="navigate('#mod:misc');return false" data-i18n="mod_misc">Miscellaneous</a>
+    </details>
+</nav>
+</aside>
+
+<main id="main">
+
+<section id="page:home" class="hero on">
+<h1>A <span class="grad">NumPy-compatible</span> numerical library<br>for the Java Virtual Machine</h1>
+<p class="lead" data-i18n="home_lead">libnpc-java provides ~330+ JNI-wrapped functions across 20+ modules. AutoCloseable arrays with try-with-resources. MIT licensed.</p>
+<div class="badges">
+    <span data-i18n="home_badge_java">Java 11+</span>
+    <span data-i18n="home_badge_jni">JNI + CMake</span>
+    <span data-i18n="home_badge_os">macOS &amp; Linux</span>
+    <span data-i18n="home_badge_mit">MIT License</span>
+</div>
+<div class="cta">
+    <a href="#page:quickstart" onclick="navigate('#page:quickstart');return false">→ Get Started</a>
+    <a class="gh" href="https://github.com/xiayang558/libnpcJava" target="_blank">GitHub</a>
+</div>
+<div class="features">
+    <div class="feat-card"><div class="fc-icon"></div><h3 data-i18n="feat1_title">RAII Memory</h3><p data-i18n="feat1_desc">Automatic native memory via <code>AutoCloseable</code>. No manual <code>free_array()</code> needed.</p></div>
+    <div class="feat-card"><div class="fc-icon"></div><h3 data-i18n="feat2_title">NumPy API</h3><p data-i18n="feat2_desc"><code>Npc.zeros()</code>, <code>Npc.sum()</code>, <code>Npc.dot()</code> — familiar names, Java conventions.</p></div>
+    <div class="feat-card"><div class="fc-icon"></div><h3 data-i18n="feat3_title">Try-with-Resources</h3><p data-i18n="feat3_desc"><code>try (NpcArray a = Npc.ones(3,4)) { ... }</code> — arrays auto-close, no leaks.</p></div>
+    <div class="feat-card"><div class="fc-icon"></div><h3 data-i18n="feat4_title">Print &amp; I/O</h3><p data-i18n="feat4_desc"><code>a.print()</code>, <code>Npc.savetxt()</code>, <code>Npc.loadNpy()</code> — .npy, .npz, CSV.</p></div>
+    <div class="feat-card"><div class="fc-icon"></div><h3 data-i18n="feat5_title">Zero-Cost Move</h3><p data-i18n="feat5_desc">Efficient native pointer transfer. Deep copy on copy, O(1) on move.</p></div>
+    <div class="feat-card"><div class="fc-icon"></div><h3 data-i18n="feat6_title">Linear Algebra</h3><p data-i18n="feat6_desc">SVD, QR, LU, Cholesky, Eig — all return structured result types.</p></div>
+</div>
+<h2 data-i18n="home_modules">Module Overview</h2>
+<div class="mod-grid" id="mod-grid"></div>
+</section>
+
+<section id="page:install" class="page">
+<a class="back" onclick="navigate('#page:home')">← Home</a>
+<h1 data-i18n="page_install">Installation</h1>
+
+<h2 data-i18n="page_prereq">Prerequisites</h2>
+<p data-i18n="page_prereq_text"><strong>JDK 11+</strong> &nbsp;·&nbsp; <strong>CMake 3.16+</strong> &nbsp;·&nbsp; <strong>libnpc</strong> (pre-built C library) &nbsp;·&nbsp; <strong>libnpcpp</strong> (header-only C++ wrapper) &nbsp;·&nbsp; <strong>libzip</strong> (optional, for .npz I/O)</p>
+
+<h2 data-i18n="page_clone">Build from Source</h2>
+<div class="qs"><div class="qs-header"><span>Terminal</span><button onclick="copyCode(this)">Copy</button></div>
+<pre><code># 1. Build libnpc (one-time)
+cd /path/to/libnpc &amp;&amp; make lib
+
+# 2. Build JNI native library
+cd libnpcJava &amp;&amp; mkdir -p build &amp;&amp; cd build
+cmake .. -DLIBNPC_ROOT=/path/to/libnpc -DLIBNPCPP_ROOT=/path/to/npc++ -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+
+# 3. Build Java &amp; run tests
+cd .. &amp;&amp; mvn compile &amp;&amp; mvn test</code></pre></div>
+</section>
+
+<section id="page:quickstart" class="page">
+<a class="back" onclick="navigate('#page:home')">← Home</a>
+<h1 data-i18n="page_qs">Quick Start</h1>
+<div class="qs"><div class="qs-header"><span>Main.java</span><button onclick="copyCode(this)">Copy</button></div>
+<pre><code>import libnpc.Npc;
+import libnpc.NpcArray;
+
+public class Main {
+    public static void main(String[] args) {
+        // Create arrays — they auto-close via try-with-resources
+        try (NpcArray a = Npc.ones(3, 4);
+             NpcArray b = Npc.full(new int[]{3, 4}, 2.0)) {
+
+            NpcArray c = Npc.add(a, b);    // element-wise add
+            NpcArray d = Npc.sqrt(c);      // element-wise sqrt
+
+            double total = d.sum().scalarDouble();
+            System.out.println(total);     // 7.794
+
+            NpcArray I = Npc.eye(3);
+            SvdResult svd = Npc.svd(I);
+        }
+    }
+}</code></pre></div>
+</section>
+
+<section id="page:dtype" class="page">
+<a class="back" onclick="navigate('#page:home')">← Home</a>
+<h1 data-i18n="page_dtype">Data Types</h1>
+<p data-i18n="page_dtype_desc">libnpc Java maps each C type to a Java <code>DType</code> enum.</p>
+<table class="param-tbl">
+<tr><th>DType</th><th>C Type</th><th>Java Type</th><th>Bytes</th></tr>
+<tr><td class="pn">BOOL</td><td class="pt">bool</td><td>boolean</td><td>1</td></tr>
+<tr><td class="pn">INT8</td><td class="pt">int8_t</td><td>byte</td><td>1</td></tr>
+<tr><td class="pn">INT16</td><td class="pt">int16_t</td><td>short</td><td>2</td></tr>
+<tr><td class="pn">INT32</td><td class="pt">int32_t</td><td>int</td><td>4</td></tr>
+<tr><td class="pn">INT64</td><td class="pt">int64_t</td><td>long</td><td>8</td></tr>
+<tr><td class="pn">UINT8</td><td class="pt">uint8_t</td><td>byte</td><td>1</td></tr>
+<tr><td class="pn">FLOAT32</td><td class="pt">float</td><td>float</td><td>4</td></tr>
+<tr><td class="pn">FLOAT64</td><td class="pt">double</td><td>double</td><td>8</td></tr>
+<tr><td class="pn">FLOAT128</td><td class="pt">long double</td><td>—</td><td>16</td></tr>
+<tr><td class="pn">COMPLEX64</td><td class="pt">complex float</td><td>double[2]</td><td>8</td></tr>
+<tr><td class="pn">COMPLEX128</td><td class="pt">complex double</td><td>double[2]</td><td>16</td></tr>
+<tr><td class="pn">DATETIME64</td><td class="pt">int64_t</td><td>long</td><td>8</td></tr>
+</table>
+</section>
+
+<section id="page:array" class="page">
+<a class="back" onclick="navigate('#page:home')">← Home</a>
+<h1 data-i18n="page_array">NpcArray Class</h1>
+<p>The <code>NpcArray</code> class is the central type of libnpc Java. It implements <code>AutoCloseable</code> for automatic native memory management.</p>
+
+<h2 data-i18n="arr_constructors">Lifecycle</h2>
+<table class="param-tbl">
+<tr><th data-i18n="arr_method">Method</th><th data-i18n="arr_desc">Description</th></tr>
+<tr><td class="pn">close()</td><td>Frees native memory. Idempotent — safe to call multiple times.</td></tr>
+<tr><td class="pn">isClosed()</td><td>Returns true if already closed.</td></tr>
+</table>
+
+<h2 data-i18n="arr_accessors">Metadata</h2>
+<table class="param-tbl">
+<tr><th data-i18n="arr_method">Method</th><th data-i18n="arr_return">Return</th><th data-i18n="arr_desc">Description</th></tr>
+<tr><td class="pn">ndim()</td><td class="pt">int</td><td data-i18n="arr_ndim">Number of dimensions.</td></tr>
+<tr><td class="pn">size()</td><td class="pt">int</td><td data-i18n="arr_size">Total element count.</td></tr>
+<tr><td class="pn">shape()</td><td class="pt">int[]</td><td data-i18n="arr_shape">Shape array.</td></tr>
+<tr><td class="pn">shape(int axis)</td><td class="pt">int</td><td>Size of given axis.</td></tr>
+<tr><td class="pn">dtype()</td><td class="pt">DType</td><td data-i18n="arr_dtype">Element data type.</td></tr>
+</table>
+
+<h2 data-i18n="arr_elem_access">Element Access</h2>
+<table class="param-tbl">
+<tr><th data-i18n="arr_method">Method</th><th data-i18n="arr_desc">Description</th></tr>
+<tr><td class="pn">getDouble(int... indices)</td><td>Multi-dim getter.</td></tr>
+<tr><td class="pn">setDouble(double v, int... indices)</td><td>Multi-dim setter.</td></tr>
+<tr><td class="pn">getDouble(int i)</td><td>1-D getter.</td></tr>
+<tr><td class="pn">setDouble(int i, double v)</td><td>1-D setter.</td></tr>
+<tr><td class="pn">scalarDouble()</td><td>Get first element as double.</td></tr>
+<tr><td class="pn">toDoubleArray()</td><td>Copy all elements to new double[].</td></tr>
+</table>
+
+<h2 data-i18n="arr_printing">Printing &amp; I/O</h2>
+<pre><code>a.print();     // print values to stdout
+a.info();      // print metadata (dtype, ndim, shape)
+a.toString();  // → "Array(dtype=10, ndim=2, shape=[3,4])"
+a.savetxt("data.csv");
+a.saveNpy("data.npy");</code></pre>
+
+<h2 data-i18n="arr_builtin">Built-in Methods</h2>
+<pre><code>// ── Math ───────────────────────────────────────────
+arr.abs()    arr.sqrt()   arr.exp()    arr.log()
+arr.sin()    arr.cos()    arr.tan()    arr.floor()   arr.ceil()
+
+// ── Aggregation ─────────────────────────────────────
+arr.sum()    arr.sum(0)   arr.sum(0, true)   // axis, keepdims
+arr.mean()   arr.min()    arr.max()    arr.prod()
+arr.stddev() arr.var()    arr.median() arr.argmax()
+
+// ── Shape ───────────────────────────────────────────
+arr.reshape(2, 3)   arr.transpose()   arr.flatten()
+arr.squeeze()       arr.expandDims(0) arr.flip()
+
+// ── Linear Algebra ──────────────────────────────────
+arr.dot(b)   arr.matmul(b)   arr.trace()   arr.det()   arr.inv()
+
+// ── Comparison ──────────────────────────────────────
+arr.equal(b)   arr.greater(b)   arr.less(b)
+
+// ── Other ───────────────────────────────────────────
+arr.copy()   arr.astype(DType.INT32)   arr.isnan()   arr.sort()
+arr.diag()   arr.clip(0, 10)           arr.print()   arr.toString()</code></pre>
+<div class="note">
+<strong data-i18n="arr_methods_note_title">API note:</strong>
+<span data-i18n="arr_methods_note_body">All instance methods delegate to the corresponding static methods in <code>Npc</code>. Use either form — <code>arr.sum()</code> and <code>Npc.sum(arr)</code> are equivalent.</span>
+</div>
+</section>
+
+<div id="mod-pages"></div>
+<div id="fn-detail" class="page hidden"></div>
+
+</main>
+
+<script src="fns.js"></script>
+<script src="i18n.js"></script>
+<script>
+const MODULES = {
+    creation:{key:'creation'}, arithmetic:{key:'arithmetic'}, math:{key:'math'},
+    comparison:{key:'comparison'}, stats:{key:'stats'}, nanstats:{key:'nanstats'},
+    linalg:{key:'linalg'}, fft:{key:'fft'}, random:{key:'random'}, polynomial:{key:'polynomial'},
+    shape:{key:'shape'}, search:{key:'search'}, interp:{key:'interp'}, sorting:{key:'sorting'},
+    io:{key:'io'}, window:{key:'window'}, histogram:{key:'histogram'}, mutation:{key:'mutation'}, misc:{key:'misc'}
+};
+let lang='en', currentFn=null, currentMod=null, currentPage='home', _busy=false;
+
+function T(key){ return (i18n[key] && i18n[key][lang]) ? i18n[key][lang] : key; }
+function TF(key, field, fallback){
+    if (lang !== 'zh') return fallback || '';
+    return (i18n.fn && i18n.fn[key] && i18n.fn[key][field]) ? i18n.fn[key][field] : (fallback || '');
+}
+function setLang(l){
+    lang=l;
+    document.querySelectorAll('#lang-toggle button').forEach((b,i)=>b.classList.toggle('on',(i===0&&l==='en')||(i===1&&l==='zh')));
+    document.querySelectorAll('[data-i18n]').forEach(el=>{const v=i18n[el.dataset.i18n];if(v&&v[l])el.innerHTML=v[l];});
+    if(currentFn) showFn(currentFn.key);
+    else if(currentMod) showModule(currentMod);
+    else if(currentPage==='home') showHome();
+    else showPage(currentPage);
+}
+function navigate(hash){
+    if(!hash||hash==='#page:home')return showHome();
+    if(hash.startsWith('#page:'))return showPage(hash.substring(6));
+    if(hash.startsWith('#mod:'))return showModule(hash.substring(5));
+    if(hash.startsWith('#fn:'))return showFn(hash.substring(4));
+    showHome();
+}
+function hideAll(){
+    currentFn=null; currentMod=null;
+    document.querySelectorAll('.page,.hero').forEach(e=>e.classList.remove('on'));
+    const fd=document.getElementById('fn-detail'); if(fd)fd.classList.add('hidden');
+    const mp=document.getElementById('mod-page'); if(mp)mp.classList.remove('on');
+}
+function updateSidebar(a){document.querySelectorAll('.sidebar-nav a').forEach(el=>el.classList.toggle('here',a&&el.getAttribute('href')==='#'+a));}
+function esc(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';}
+
+function showHome(){
+    hideAll(); currentPage='home';
+    document.getElementById('page:home').classList.add('on');
+    _busy=true; window.location.hash='#page:home'; setTimeout(()=>_busy=false,50);
+    updateSidebar('page:home'); buildModGrid(); window.scrollTo(0,0);
+}
+function showPage(name){
+    hideAll(); currentPage=name;
+    const el=document.getElementById('page:'+name); if(!el)return;
+    el.classList.add('on');
+    _busy=true; window.location.hash='#page:'+name; setTimeout(()=>_busy=false,50);
+    updateSidebar('page:'+name); window.scrollTo(0,0);
+}
+function buildModGrid(){
+    const g=document.getElementById('mod-grid'); if(!g)return;
+    g.innerHTML=Object.entries(MODULES).map(([k])=>{const c=FNS.filter(f=>f.m===k).length;
+        return '<a class="mod-card" href="#mod:'+k+'" onclick="navigate(\'#mod:'+k+'\');event.preventDefault()"><h3>'+T('mod_'+k)+'</h3><span class="n">'+c+' '+T('func_count')+'</span></a>';}).join('');
+}
+function showModule(mod){
+    hideAll(); currentMod=mod;
+    const fs=FNS.filter(f=>f.m===mod), mn=T('mod_'+mod)||mod;
+    let html = '<a class="back" onclick="navigate(\'#page:home\')">&larr; '+T('home')+'</a>';
+    html += '<h1>'+mn+' <span class="badge">'+fs.length+' '+T('func_count')+'</span></h1>';
+    html += '<p>'+T('mod_desc_'+mod)+'</p>';
+    html += '<table class="fn-table"><thead><tr><th>'+T('name_label')+'</th><th>'+T('sig_label')+'</th><th>'+T('desc_label')+'</th></tr></thead><tbody>';
+    html += fs.map(f=>'<tr><td><a class="fn-name" href="#fn:'+f.key+'" onclick="navigate(\'#fn:'+f.key+'\');event.preventDefault()">'+f.key+'</a></td><td class="fn-sig">'+esc(f.sig)+'</td><td class="fn-desc">'+esc(TF(f.key,'desc',f.desc))+'</td></tr>').join('');
+    html += '</tbody></table>';
+    let p=document.getElementById('mod-page');
+    if(!p){p=document.createElement('section'); p.id='mod-page'; p.className='page'; document.getElementById('mod-pages').appendChild(p);}
+    p.innerHTML=html; p.classList.add('on');
+    _busy=true; window.location.hash='#mod:'+mod; setTimeout(()=>_busy=false,50);
+    updateSidebar('mod:'+mod); window.scrollTo(0,0);
+}
+function showFn(key){
+    const f=FNS.find(x=>x.key===key); if(!f)return;
+    const mn=T('mod_'+f.m), desc = TF(f.key, 'desc', f.desc);
+    let html = '<a class="back" onclick="navigate(\'#mod:'+f.m+'\')">&larr; '+mn+'</a>';
+    html += '<h1>'+f.key+' <span class="badge">'+mn+'</span></h1>';
+    html += '<p>'+esc(desc)+'</p>';
+    html += '<div class="sig"><code>'+esc(f.sig)+'</code></div>';
+    html += '<p><strong>'+T('returns_label')+':</strong> '+esc(f.ret||'void')+'</p>';
+    hideAll(); currentFn=f;
+    const el=document.getElementById('fn-detail');
+    el.innerHTML=html; el.classList.remove('hidden'); el.classList.add('on');
+    _busy=true; window.location.hash='#fn:'+key; setTimeout(()=>_busy=false,50);
+    updateSidebar('fn:'+key); window.scrollTo(0,0);
+}
+function doSearch(q){
+    const r=document.getElementById('search-results');
+    if(!q||q.length<1){r.style.display='none';return;}
+    const m=FNS.filter(f=>f.key.toLowerCase().includes(q.toLowerCase())||(f.desc||'').toLowerCase().includes(q.toLowerCase())).slice(0,24);
+    if(!m.length){r.style.display='none';return;}
+    r.innerHTML=m.map(f=>'<div class="search-item" onclick="navigate(\'#fn:'+f.key+'\');r.style.display=\'none\'"><div class="sn">'+f.key+'</div><div class="sm">'+T('mod_'+f.m)+'</div></div>').join('');
+    r.style.display='block';
+}
+document.addEventListener('click',e=>{if(!e.target.closest('#search-wrap'))document.getElementById('search-results').style.display='none';});
+function copyCode(b){const p=b.closest('.qs').querySelector('pre code');navigator.clipboard.writeText(p.textContent.trim());}
+window.addEventListener('DOMContentLoaded',()=>{navigate(window.location.hash||'#page:home');});
+window.addEventListener('hashchange',()=>{if(!_busy)navigate(window.location.hash);});
+</script>
+</body>
+</html>
